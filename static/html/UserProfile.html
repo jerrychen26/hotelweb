@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Profile</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="../css/BasicStyle.css">
+
+
+    <script>
+        function noUserAlert() {
+            alert("You must login to see your profile")
+            window.stop();
+            window.location.replace("/login");
+        }
+
+        function deleteOneSavedHotel(hotelId) {
+            var savedHotel = document.getElementById(hotelId);
+
+            const data = {hotelId: hotelId};
+            fetch('/saveHotel', {
+                method: 'delete',
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }).then(res => res.json())
+                .then(data => {
+                    if (data.success === true) {
+                        savedHotel.style.display = "none";
+                    }
+                }).catch(err => {
+                console.log('delete fail' + err);
+            });
+
+        }
+
+        function clearAllSavedHotel() {
+            var sure = confirm('Are you sure?');
+            if(!sure) return;
+
+            var savedHotels = document.getElementById("allSavedHotel");
+            const data = {hotelId: ""};
+            fetch('/saveHotel', {
+                method: 'delete',
+                body:JSON.stringify(data)
+            }).then(res => res.json())
+                .then(data => {
+                    if (data.success === true) {
+                        document.getElementById("savedHotelsMessage").innerText = "Your saved hotels have been cleared"
+                        savedHotels.style.display = "none";
+                    }
+                }).catch(err => {
+                console.log('delete fail' + err);
+            });
+
+        }
+
+        function editReview(reviewId) {
+            var editForm = document.getElementById("editForm" + reviewId);
+            if (editForm.style.display === "block") {
+                editForm.style.display = "none"
+            } else {
+                editForm.style.display = "block"
+            }
+        }
+
+        function saveReview(reviewId) {
+            var editForm = document.getElementById("editForm" + reviewId);
+            editForm.style.display = "none";
+            var title = document.getElementById('title' + reviewId).value;
+            var reviewText = document.getElementById('reviewText' + reviewId).value;
+            const data = {reviewId: reviewId, title: title, reviewText: reviewText}
+            fetch('/review', {
+                method: 'put',
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }).then(res => res.json())
+                .then(data => {
+                    console.log('update successfully')
+                    document.getElementById('titleText' + reviewId).innerText = title;
+                }).catch(err => {
+                console.log('update fail');
+            });
+        }
+
+        function removeReview(reviewId) {
+            var sure = confirm('Are you sure?');
+            if(!sure) return;
+
+            var editForm = document.getElementById(reviewId);
+            editForm.style.display = "none";
+            const data = {reviewId: reviewId}
+            fetch('/review', {
+                method: 'delete',
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }).then(res => res.json())
+                .then(data => {
+                    console.log('delete successfully')
+                }).catch(err => {
+                console.log('delete fail');
+            });
+        }
+
+    </script>
+
+</head>
+
+<body>
+<p hidden=>$script</p>
+<nav class="navbar navbar-inverse">
+    <div class="container-fluid">
+        <div class="collapse navbar-collapse" id="myNavbar">
+            <ul class="nav navbar-nav">
+                <li class="active"><a href="/home">Home</a></li>
+            </ul>
+
+            #if($isLoggedIn)
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="/profile">Profile</a></li>
+                <li><a href="/logout"><span class="glyphicon glyphicon-log-out"></span> Logout</a></li>
+            </ul>
+            #else
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="/login"><span class="glyphicon glyphicon-log-in"></span> Login</a></li>
+                <li><a href="/register">Register</a></li>
+            </ul>
+            #end
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid text-center">
+    <div class="row content">
+        <div class="col-sm-2 sidenav">
+            <!-- Left Side -->
+        </div>
+
+        <div class="col-sm-8 text-left">
+            <h1>Hello, $username</h1>
+            <h3>$lastLoginTime</h3>
+            </button>
+            <br/>
+            <br/>
+
+            <h3 id="savedHotelsMessage">Hotels You Saved</h3>
+            <div id="allSavedHotel">
+                <input type="button" class="btn btn-danger btn-xs" value="Clear" id="clearSavedHotelButton"
+                       onclick="clearAllSavedHotel()"><br/>
+
+                #foreach($hotel in $hotels)
+                <div id="$hotel.id">
+                    <a href="/hotelDetail?hotelId=$hotel.id">$hotel.name</a>
+                    <div class="text-right">
+                        <input type="button" class="btn btn-danger btn-xs" value="Delete"
+                               onclick="deleteOneSavedHotel('$hotel.id')">
+                    </div>
+                    <br/>
+                </div>
+                #end
+            </div>
+
+            <h3>Review Your Reviews</h3>
+
+            #foreach($review in $reviews)
+            <div id="$review.reviewId">
+                <a id="titleText$review.reviewId" href="/hotelDetail?hotelId=$review.hotelId">$review.title</a>
+                <div class="text-right">
+                    <input type="button" class="btn btn-warning btn-xs" value="Edit"
+                           onclick="editReview('$review.reviewId')">
+                    <input type="button" class="btn btn-danger btn-xs" value="Remove"
+                           onclick="removeReview('$review.reviewId')">
+                </div>
+
+                <div class="form-group" id="editForm$review.reviewId" style="display: none;">
+
+                    <textarea class="form-control" cols="60" rows="1"
+                              id="title$review.reviewId">$review.title</textarea>
+                    <br/>
+                    <textarea class="form-control" id="reviewText$review.reviewId" cols="82" rows="20"
+                              name="reviewText">$review.reviewText</textarea>
+
+                    <input class="btn-primary" type="button" value="Save" onclick="saveReview('$review.reviewId')">
+                </div>
+
+            </div>
+            #end
+
+
+        </div>
+
+        <div class="col-sm-2 sidenav">
+            <!-- Right Side -->
+            <p hidden>
+        </div>
+    </div>
+</div>
+
+<footer class="container-fluid text-center">
+    <p>Made By Jerry :D</p>
+</footer>
+
+</body>
+</html>

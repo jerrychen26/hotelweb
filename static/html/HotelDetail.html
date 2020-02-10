@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>$hotel.name</title>
+    <style>
+        #map {
+            width: 100%;
+            height: 400px;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0%;
+            padding: 0%;
+        }
+
+        h1 {
+            display: inline;
+        }
+
+    </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="../css/BasicStyle.css">
+    <link rel="stylesheet" href="../css/detail.css">
+
+    <script>
+        function saveThisHotel(hotelId) {
+            const data = {hotelId: hotelId};
+            fetch('/saveHotel', {
+                method: 'post',
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }).then(res => res.json())
+                .then(data => {
+                    if (data.success == true) {
+                        alert("Success Save");
+                    } else {
+                        alert(data.message);
+                    }
+                }).catch(err => {
+                console.log('error happen: ');
+                console.log(err);
+            });
+        }
+
+        function searchAttractions(hotelId) {
+            var miles = document.getElementById("radius").value;
+            if (isNaN(miles)) {
+                alert('You Must Give a Number!')
+                return;
+            }
+
+            fetch('/attractions?hotelId=' + hotelId + '&radius=' + miles, {
+                method: 'get'
+            }).then(res => res.json())
+                .then(data => {
+                    if (data.success == true) {
+                        var tbody = document.getElementById("tb");
+                        tbody.innerText ="";
+
+                        alert(data.message);
+                        for (i in data.touristAttractions) {
+                            console.log(data.touristAttractions[i].name);
+
+                            var td1 = document.createElement("td");
+                            var td1Text = document.createTextNode(data.touristAttractions[i].name);
+                            td1.append(td1Text);
+                            var td2 = document.createElement("td");
+                            var td2Text = document.createTextNode(data.touristAttractions[i].address);
+                            td2.append(td2Text);
+                            var td3 = document.createElement("td");
+                            var td3Text = document.createTextNode(data.touristAttractions[i].rating);
+                            td3.append(td3Text);
+                            var tr = document.createElement("tr");
+                            tr.appendChild(td1);
+                            tr.appendChild(td2);
+                            tr.appendChild(td3);
+                            tbody.appendChild(tr);
+
+                        }
+                        var attractions = document.getElementById("attractions");
+                        attractions.style.display = "block"
+                    } else {
+                        console.log("fail");
+                        alert(data.message);
+                    }
+
+
+                }).catch(err => {
+                console.log('error happen: ');
+                console.log(err);
+            });
+        }
+
+        function alertYouMustSubmit() {
+            alert('You must Submit')
+        }
+
+    </script>
+
+
+</head>
+<body>
+<p hidden>$script</p>
+#if(!$isLoggedIn)
+<script>
+    alert("You must login to see this page");
+    window.stop();
+    window.location.replace("/login");
+</script>
+#end
+<nav class="navbar navbar-inverse">
+    <div class="container-fluid">
+        <div class="collapse navbar-collapse" id="myNavbar">
+            <ul class="nav navbar-nav">
+                <li class="active"><a href="/home">Home</a></li>
+            </ul>
+
+            #if($isLoggedIn)
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="/profile">Profile</a></li>
+                <li><a href="/logout"><span class="glyphicon glyphicon-log-out"></span> Logout</a></li>
+            </ul>
+            #else
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="/register">Register</a></li>
+                <li><a href="/login"><span class="glyphicon glyphicon-log-in"></span> Login</a></li>
+            </ul>
+            #end
+        </div>
+    </div>
+</nav>
+
+
+<div class="container-fluid text-center">
+    <div class="row content">
+        <div class="col-sm-2 sidenav">
+            <!-- Left Side -->
+        </div>
+
+        <div class="col-sm-8 text-left">
+            <h1>$hotel.name</h1>
+            #if($isLoggedIn)
+            <input class="btn btn-success btn-sm" type="button" onclick="saveThisHotel('$hotel.id')" id="saveHotel"
+                   value="Save This Hotel">
+            #else
+            <input class="btn btn-success btn-sm" type="button" onclick="alertYouMustSubmit()" value="Save This Hotel">
+            #end
+
+
+            <div id="map"></div>
+            <script>
+                function initMap() {
+                    var locationRio = {lat: $hotel.latitude, lng: $hotel.longitude};
+                    var map = new google.maps.Map(document.getElementById('map'), {
+                        zoom: 13,
+                        center: locationRio,
+                        gestureHandling: 'cooperative'
+                    });
+                    var marker = new google.maps.Marker({
+                        position: locationRio,
+                        map: map,
+                        title: 'Hello World!'
+                    });
+                }
+            </script>
+            <script async defer
+                    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDEvPZcqj3aXoII9X8eZc6xbXxnm3AxtD0&callback=initMap">
+            </script>
+
+            <h4>Find tourist attractions around this hotel...</h4>
+            <input type="text" class="form-control" placeholder="radius in miles" id="radius">
+            <input type="button" class="btn btn-primary btn-xs" value="Search" onclick="searchAttractions('$hotel.id')">
+            <br/>
+            <div id="attractions" style="display: none;">
+                <table class="table table-condensed">
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Address</th>
+                        <th>Rate</th>
+                    </tr>
+                    </thead>
+                    <tbody id="tb">
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Reviews</h3>
+            #foreach($review in $reviews)
+            <div class="panel panel-info">
+                <div class="panel-heading">$review.title</div>
+                <div class="panel-body">$review.reviewText</div>
+                <div class="panel-footer">Submitted On $review.submissionTime</div>
+            </div>
+            #end
+
+            #if($isLoggedIn)
+            <h2>Write Your Review!</h2>
+            <form action="/review" method="POST">
+                <input type="hidden" value="$hotel.id" name="hotelId">
+                <div class="form-group">
+                    <label class="w3-text-black"><b>Title</b></label>
+                    <textarea class="form-control" cols="80" rows="1" name="title"></textarea>
+                    <label class="w3-text-brown"><b>How did you feel:</b></label>
+                    <input class="w3-radio" type="radio" name="rate" value="5" checked><label>Excellent</label>
+                    <input class="w3-radio" type="radio" name="rate" value="4"><label>Amazing</label>
+                    <input class="w3-radio" type="radio" name="rate" value="3"><label>Good</label>
+                    <input class="w3-radio" type="radio" name="rate" value="2"><label>Bad</label>
+                    <input class="w3-radio" type="radio" name="rate" value="1"><label>Terrible</label>
+                    <br/>
+                    <label class="w3-text-black"><b>Everything You Wanna Say:</b></label>
+                    <textarea class="form-control" id="reviewText" class="text" cols="82" rows="20"
+                              name="reviewText"></textarea>
+                    <input class="w3-btn w3-blue" type="submit" value="Submit">
+                </div>
+            </form>
+            #else
+            <h2>Log In To Write Your Review!</h2>
+            #end
+
+        </div>
+
+
+        <div class="col-sm-2 sidenav">
+            <!-- Right Side -->
+        </div>
+    </div>
+</div>
+
+<footer class="container-fluid text-center">
+    <p>Made By Jerry :D</p>
+</footer>
+
+</body>
+</html>
